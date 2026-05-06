@@ -66,7 +66,7 @@ class TranDataWrapper
             'amt' => number_format($this->amt, 2, '.', ''),
             'action' => (string) $this->action,
             'password' => $this->password,
-            'id' => $this->id,
+            'tranportalId' => $this->id,
             'currencyCode' => (string) $this->currencyCode,
             'trackId' => $this->trackId,
             'responseURL' => $this->responseURL,
