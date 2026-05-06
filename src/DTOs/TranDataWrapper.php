@@ -17,8 +17,8 @@ class TranDataWrapper
     public string $langid = 'ar';
     public ?string $responseURL = null;
     public ?string $errorURL = null;
-    private $encryptionKey = "DCB04EAA4019E367F005909DA87B031A" ;
-    private $encryptionIV = "PGKEYENCDECIVSPC";
+    private $encryptionKey = "";
+    private $encryptionIV = "";
 
     public function __construct(
         int $amt,
@@ -89,9 +89,9 @@ class TranDataWrapper
         return strtoupper(bin2hex($encrypted));
     }
     
-    public function decryptResponse(string $encryptedBase64Data): string
+    public function decryptResponse(string $encryptedHexData): string
     {
-        $binaryData = base64_decode($encryptedBase64Data);
+        $binaryData = hex2bin($encryptedHexData);
         $decrypted = openssl_decrypt(
             $binaryData,
             'AES-128-CBC',
