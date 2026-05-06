@@ -36,7 +36,11 @@ class TranDataWrapper
         ?string $trackId = null,
         string $langid = 'ar'
     ) {
-        $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
+        if (function_exists('config')) {
+            $config = config('neoleap', []);
+        } else {
+            $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
+        }
 
         $this->amt = $amt;
         $this->id = $id ?: ($config['tranportal_id'] ?? '');

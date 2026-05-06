@@ -2,9 +2,9 @@
     "name": "cofa/neoleap-integration-package",
     "description": "This package helps you to integrate with Neoleap payment getaway",
     "require": {
-        "phpunit/phpunit": "^13.1"
     },
     "require-dev": {
+        "phpunit/phpunit": "^13.1",
         "vimeo/psalm": "^6.16"
     },
     "license": "MIT",
@@ -23,5 +23,12 @@
             "name": "Mahmoud Gamal",
             "email": "112869567+Cofa12@users.noreply.github.com"
         }
-    ]
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Cofa\\NeoleapIntegrationPackage\\NeoleapServiceProvider"
+            ]
+        }
+    }
 }

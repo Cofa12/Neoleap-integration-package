@@ -17,7 +17,11 @@ class Checkout
 
         $encryptedData = $dataWrapper->returnEncryptedTrandata();
 
-        $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
+        if (function_exists('config')) {
+            $config = config('neoleap', []);
+        } else {
+            $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
+        }
         $merchantId = $config['merchant_id'] ?? $dataWrapper->id;
 
         return $this->postToNeoleap(
@@ -35,7 +39,7 @@ class Checkout
         $ch = curl_init($url);
 
         $postData = json_encode([[
-            'id' => $id,
+            'tranportalId' => $id,
             'trandata' => $data,
             'responseURL' => $responseURL,
             'errorURL' => $errorURL
@@ -69,7 +73,11 @@ class Checkout
 
     public function returnNeoleapURL(): string
     {
-        $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
+        if (function_exists('config')) {
+            $config = config('neoleap', []);
+        } else {
+            $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
+        }
 
         return $config['neoleap_url'] ?? "";
     }
