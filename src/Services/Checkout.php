@@ -5,14 +5,15 @@ use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
 
 class Checkout
 {
-    public function checkout(): string
+    public function checkout(?TranDataWrapper $dataWrapper = null): string
     {
-        $dataWrapper = new TranDataWrapper(
-            amt: 1,
-            action: 1,
-            currencyCode: 682,
-            id: 1
-        );
+        if (!$dataWrapper) {
+            $dataWrapper = new TranDataWrapper(
+                amt: 1,
+                action: 1,
+                currencyCode: 682
+            );
+        }
 
         $encryptedData = $dataWrapper->returnEncryptedTrandata();
 
