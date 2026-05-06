@@ -13,6 +13,11 @@
             "Cofa\\NeoleapIntegrationPackage\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Cofa\\NeoleapIntegrationPackage\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Mahmoud Gamal",
