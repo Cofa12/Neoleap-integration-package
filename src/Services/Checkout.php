@@ -38,12 +38,12 @@ class Checkout
 
         $ch = curl_init($url);
 
-        $postData = json_encode([[
+        $postData = json_encode([
             'tranportalId' => $id,
             'trandata' => $data,
             'responseURL' => $responseURL,
             'errorURL' => $errorURL
-        ]]);
+        ]);
 
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
