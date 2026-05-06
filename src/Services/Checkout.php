@@ -22,7 +22,7 @@ class Checkout
         } else {
             $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
         }
-        $merchantId = $config['merchant_id'] ?? $dataWrapper->id;
+        $merchantId = !empty($config['merchant_id']) ? $config['merchant_id'] : $dataWrapper->id;
 
         return $this->postToNeoleap(
             $encryptedData,
