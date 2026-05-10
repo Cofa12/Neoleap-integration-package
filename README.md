@@ -24,15 +24,15 @@ composer require cofa/neoleap-integration-package
 
 ## Configuration
 
-The package uses a configuration file to manage your Neoleap credentials. You can create a `config/neoleap.php` file in your project root (or it will be automatically published if using Laravel).
+Publish or create a `config/neoleap.php` file in your project:
 
 ```php
 return [
     'password'       => env('NEOLEAP_PASSWORD', ''),
     'tranportal_id'  => env('NEOLEAP_TRANPORTAL_ID', ''),
     'merchant_id'    => env('NEOLEAP_MERCHANT_ID', ''),
-    'encryption_key' => env('NEOLEAP_ENCRYPTION_KEY', 'DCB04EAA4019E367F005909DA87B031A'),
-    'encryption_iv'  => env('NEOLEAP_ENCRYPTION_IV', 'PGKEYENCDECIVSPC'),
+    'encryption_key' => env('NEOLEAP_ENCRYPTION_KEY', ''),
+    'encryption_iv'  => env('NEOLEAP_ENCRYPTION_IV', ''),
     'neoleap_url'    => env('NEOLEAP_URL', 'https://securepayments.neoleap.com.sa/pg/payment/hosted.htm'),
     'response_url'   => env('NEOLEAP_RESPONSE_URL', ''),
     'error_url'      => env('NEOLEAP_ERROR_URL', ''),
@@ -43,44 +43,66 @@ return [
 
 ### Simple Checkout
 
-The `Checkout` service handles the complexity of encrypting data and posting to Neoleap.
+`checkout()` encrypts the transaction data, posts it to Neoleap, and returns the gateway's JSON response as a PHP **array**.
 
 ```php
 use Cofa\NeoleapIntegrationPackage\Services\Checkout;
+use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
 
 $checkout = new Checkout();
-$response = $checkout->checkout();
 
-// The response will typically contain the HTML form or redirect response from Neoleap
-echo $response;
+$dataWrapper = new TranDataWrapper(
+    amt:     100,              // Amount in SAR
+    action:  1,                // 1 = Purchase
+    trackId: 'order_' . time() // Unique order reference
+);
+
+$response = $checkout->checkout($dataWrapper);
+
+// $response is an array, e.g.:
+// [
+//   'status'      => '1',
+//   'payment_url' => 'https://securepayments.neoleap.com.sa/pg/payment/pay.htm?token=...',
+// ]
+
+if (!empty($response['payment_url'])) {
+    // Redirect the user to the payment page
+    header('Location: ' . $response['payment_url']);
+    exit;
+}
 ```
 
 ### Manual Request Building
 
-You can use the `TranDataWrapper` to manually build and encrypt your request.
+Use `TranDataWrapper` directly to build and encrypt the payload:
 
 ```php
 use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
 
 $dataWrapper = new TranDataWrapper(
-    amt: 100,            // Amount
-    action: 1,           // 1 for Purchase
-    currencyCode: 682,   // SAR
-    trackId: 'order_123' // Unique track ID
+    amt:         100,
+    action:      1,
+    currencyCode: 682,
+    trackId:     'order_123'
 );
 
-// Get encrypted string for 'trandata' field
+// Get encrypted string for the 'trandata' field
 $encryptedTrandata = $dataWrapper->returnEncryptedTrandata();
 ```
 
-### Decrypting Response
+### Decrypting the Callback Response
 
-When Neoleap redirects back to your `responseURL`, you can decrypt the transaction data:
+When Neoleap redirects to your `responseURL`, decrypt the returned `trandata`:
 
 ```php
-$dataWrapper = new TranDataWrapper(amt: 0); // Config is loaded automatically
-$decryptedJson = $dataWrapper->decryptResponse($_POST['trandata']);
-$responseData = json_decode($decryptedJson, true);
+use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
+
+$dataWrapper    = new TranDataWrapper(amt: 0); // Config loaded automatically
+$decryptedJson  = $dataWrapper->decryptResponse($_POST['trandata']);
+$responseData   = json_decode($decryptedJson, true);
+
+// $responseData['result'] — transaction result code
+// $responseData['trackId'] — your original order reference
 ```
 
 ## Testing

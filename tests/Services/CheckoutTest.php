@@ -23,12 +23,12 @@ class CheckoutTest extends TestCase
             ->onlyMethods(['postToNeoleap'])
             ->getMock();
 
-        // Simulate a successful response from Neoleap
-        $simulatedResponse = json_encode([[
-            'status' => '1',
+        // Simulate a successful JSON response from Neoleap (returned as array)
+        $simulatedResponse = [
+            'status'      => '1',
             'payment_url' => 'https://securepayments.neoleap.com.sa/pg/payment/pay.htm?token=simulated_token_123',
-            'trackId' => '123456789'
-        ]]);
+            'trackId'     => '123456789',
+        ];
 
         $checkoutMock->expects($this->once())
             ->method('postToNeoleap')
@@ -36,8 +36,10 @@ class CheckoutTest extends TestCase
 
         $result = $checkoutMock->checkout();
 
-        $this->assertStringContainsString('simulated_token_123', $result);
-        $this->assertStringContainsString('payment_url', $result);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('status', $result);
+        $this->assertArrayHasKey('payment_url', $result);
+        $this->assertStringContainsString('simulated_token_123', $result['payment_url']);
     }
 
     /**
@@ -46,7 +48,7 @@ class CheckoutTest extends TestCase
     public function test_real_checkout_call()
     {
         $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
-        
+
         if (empty($config['tranportal_id'])) {
             $this->markTestSkipped('Real credentials not provided in config.');
             return;
@@ -54,8 +56,9 @@ class CheckoutTest extends TestCase
 
         $checkout = new Checkout();
         $response = $checkout->checkout();
-        
-        $this->assertNotEmpty($response);
+
+        $this->assertIsArray($response);
+        $this->assertArrayHasKey('status', $response);
     }
 
     public function test_it_can_decrypt_response()
