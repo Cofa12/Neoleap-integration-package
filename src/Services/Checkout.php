@@ -5,7 +5,7 @@ use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
 
 class Checkout
 {
-    public function checkout(?TranDataWrapper $dataWrapper = null): array
+    public function checkout(?TranDataWrapper $dataWrapper = null, string $customerIp = ''): array
     {
         if (!$dataWrapper) {
             $dataWrapper = new TranDataWrapper(
@@ -24,26 +24,37 @@ class Checkout
             $encryptedData,
             $merchantId,
             $dataWrapper->responseURL,
-            $dataWrapper->errorURL
+            $dataWrapper->errorURL,
+            $customerIp
         );
     }
 
     /**
      * Posts encrypted transaction data to Neoleap.
      *
-     * @return array  ['status' => '...', 'page' => 'https://...'] on success
-     *                ['status' => 'error', 'message' => '...']    on failure
+     * @return array  ['status' => '1', 'result' => 'paymentId:url'] on success
+     *                ['status' => 'error', 'message' => '...']      on failure
      */
-    public function postToNeoleap(string $data, string $id, ?string $responseURL, ?string $errorURL): array
+    public function postToNeoleap(string $data, string $id, ?string $responseURL, ?string $errorURL, string $customerIp = ''): array
     {
         $url = $this->returnNeoleapURL();
 
-        $postBody = json_encode([
-            'tranportalId' => $id,
-            'trandata'     => $data,
-            'responseURL'  => $responseURL ?? '',
-            'errorURL'     => $errorURL    ?? '',
-        ]);
+        // Doc requires array-wrapped body: [{...}]
+        $postBody = json_encode([[
+            'id'          => $id,
+            'trandata'    => $data,
+            'responseURL' => $responseURL ?? '',
+            'errorURL'    => $errorURL    ?? '',
+        ]]);
+
+        $headers = [
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ];
+
+        if ($customerIp !== '') {
+            $headers[] = 'X-FORWARDED-FOR: ' . $customerIp;
+        }
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -52,10 +63,7 @@ class Checkout
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Accept: application/json',
-            ],
+            CURLOPT_HTTPHEADER     => $headers,
         ]);
 
         $response = curl_exec($ch);
