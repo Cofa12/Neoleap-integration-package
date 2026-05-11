@@ -98,4 +98,29 @@ class TranDataWrapperTest extends TestCase
 
         $this->assertEquals($wrapper->returnTransactionString(), $decrypted);
     }
+
+    // Neoleap URL-encodes the plaintext before encrypting responses (doc page 282 note + live observation)
+    public function test_decrypt_response_handles_url_encoded_content()
+    {
+        $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
+        $key    = $config['encryption_key'] ?? '';
+        $iv     = $config['encryption_iv']  ?? '';
+
+        // Simulate what Neoleap returns: URL-encoded JSON, PKCS5-padded, AES-256-CBC encrypted
+        $plainJson   = '[{"maskedCardNo":"401200******1112","cardOnFileToken":"202613103841966"}]';
+        $urlEncoded  = urlencode($plainJson);
+        $pad         = 16 - (strlen($urlEncoded) % 16);
+        $padded      = $urlEncoded . str_repeat(chr($pad), $pad);
+        $encrypted   = openssl_encrypt($padded, 'aes-256-cbc', $key, OPENSSL_ZERO_PADDING, $iv);
+        $hexData     = strtoupper(bin2hex(base64_decode($encrypted)));
+
+        $wrapper  = new TranDataWrapper(amt: 1);
+        $decrypted = $wrapper->decryptResponse($hexData);
+
+        // decryptResponse must return the plain JSON, not the URL-encoded form
+        $this->assertEquals($plainJson, $decrypted);
+        $parsed = json_decode($decrypted, true);
+        $this->assertEquals('202613103841966', $parsed[0]['cardOnFileToken']);
+        $this->assertEquals('401200******1112', $parsed[0]['maskedCardNo']);
+    }
 }

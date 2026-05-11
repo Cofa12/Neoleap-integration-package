@@ -109,7 +109,7 @@ class TranDataWrapper
             $this->encryptionIV
         );
 
-        return $this->pkcs5Unpad((string) $decrypted);
+        return urldecode($this->pkcs5Unpad((string) $decrypted));
     }
 
     private function pkcs5Pad(string $data): string
