@@ -21,12 +21,9 @@ class Checkout
 
         $encryptedData = $dataWrapper->returnEncryptedTrandata();
 
-        $config     = $this->loadConfig();
-        $tranportalId = $config['tranportal_id'] ?? '';
-
         return $this->postToNeoleap(
             $encryptedData,
-            $tranportalId,
+            $dataWrapper->id,
             $dataWrapper->responseURL,
             $dataWrapper->errorURL,
             $customerIp

@@ -49,7 +49,6 @@ Create or publish `config/neoleap.php`:
 return [
     'password'             => env('NEOLEAP_PASSWORD', ''),
     'tranportal_id'        => env('NEOLEAP_TRANPORTAL_ID', ''),
-    'merchant_id'          => env('NEOLEAP_MERCHANT_ID', ''),      // optional, overrides tranportal_id
     'encryption_key'       => env('NEOLEAP_ENCRYPTION_KEY', ''),   // 32-byte raw key
     'encryption_iv'        => env('NEOLEAP_ENCRYPTION_IV', ''),    // 16-byte IV
     'neoleap_url'          => env('NEOLEAP_URL', 'https://securepayments.neoleap.com.sa/pg/payment/hosted.htm'),
@@ -70,8 +69,6 @@ NEOLEAP_RESPONSE_URL=https://yourapp.com/neoleap/callback/success
 NEOLEAP_ERROR_URL=https://yourapp.com/neoleap/callback/error
 ```
 
-> **Note:** If `merchant_id` is set it takes precedence over `tranportal_id` as the gateway ID.
-
 ---
 
 ## Usage
@@ -87,10 +84,10 @@ use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
 $checkout = new Checkout();
 
 $wrapper = new TranDataWrapper(
-    amt:     150,                  // amount in SAR (integer)
-    action:  1,                    // 1=purchase, 2=auth, 3=refund, 4=void
-    trackId: 'order_' . time(),   // unique order reference
-    langid:  'ar',                 // 'ar' or 'en'
+    amt:     150,                 // amount in SAR (integer)
+    action:  1,                   // 1=purchase, 2=auth, 3=refund, 4=void
+    trackId: 'order_' . time(),  // optional — defaults to time()
+    langid:  'ar',                // 'ar' or 'en'
 );
 
 $response = $checkout->checkout($wrapper, customerIp: '203.0.113.1');
@@ -107,15 +104,15 @@ exit;
 | Parameter     | Type      | Default     | Description                              |
 |---------------|-----------|-------------|------------------------------------------|
 | `amt`         | `int`     | —           | Amount in SAR                            |
-| `id`          | `string`  | from config | Tranportal ID (auto-loaded from config)  |
 | `action`      | `int`     | `1`         | 1=purchase, 2=auth, 3=refund, 4=void     |
 | `currencyCode`| `int`     | `682`       | 682 = Saudi Riyal                        |
-| `password`    | `string`  | from config | Transaction password                     |
 | `trackId`     | `string`  | `time()`    | Unique order reference                   |
 | `responseURL` | `string`  | from config | Success callback URL                     |
 | `errorURL`    | `string`  | from config | Error callback URL                       |
 | `langid`      | `string`  | `'ar'`      | Payment page language (`ar` / `en`)      |
 | `udf1`–`udf5` | `string`  | `''`        | User-defined fields (passed through)     |
+
+> `tranportal_id` and `password` are always loaded from config — no need to pass them.
 
 ---
 
@@ -170,6 +167,7 @@ $dto = new CardOnFilePaymentData(
     cardType:        'C',           // 'C' = credit, 'D' = debit
     expMonth:        '05',
     expYear:         '2027',
+    trackId:         'order_' . time(),  // optional — defaults to time()
 );
 
 $response = $checkout->payWithSavedCard($dto, customerIp: '203.0.113.1');
@@ -191,6 +189,7 @@ $response = $checkout->payWithSavedCard($dto, customerIp: '203.0.113.1');
 | `expYear`        | `string` | —       | Expiry year (4 digits)             |
 | `action`         | `int`    | `1`     | 1=purchase, 2=auth                 |
 | `currencyCode`   | `int`    | `682`   | 682 = Saudi Riyal                  |
+| `trackId`        | `string` | `time()`| Unique order reference             |
 | `udf1`–`udf5`   | `string` | `''`    | User-defined fields                |
 
 ---
@@ -233,7 +232,8 @@ $checkout = new Checkout();
 
 $dto = new WalletPaymentData(
     amt:          150,
-    mobileNumber: '512345678',   // 9 digits, no country code
+    mobileNumber: '512345678',          // 9 digits, no country code
+    trackId:      'order_' . time(),    // optional — defaults to time()
 );
 
 $response = $checkout->payWithWallet($dto, customerIp: '203.0.113.1');
@@ -249,6 +249,7 @@ $response = $checkout->payWithWallet($dto, customerIp: '203.0.113.1');
 | `mobileNumber` | `string` | —       | 9-digit mobile number (no prefix)    |
 | `action`       | `int`    | `1`     | 1=purchase                           |
 | `currencyCode` | `int`    | `682`   | 682 = Saudi Riyal                    |
+| `trackId`      | `string` | `time()`| Unique order reference               |
 | `udf1`–`udf5` | `string` | `''`    | User-defined fields                  |
 
 > **Validation:** `mobileNumber` must be exactly 9 digits — an `InvalidArgumentException` is thrown otherwise.
