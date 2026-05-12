@@ -43,7 +43,7 @@ class TranDataWrapper
         }
 
         $this->amt = $amt;
-        $this->id = $id ?: (!empty($config['merchant_id']) ? $config['merchant_id'] : ($config['tranportal_id'] ?? ''));
+        $this->id = $id ?: ($config['tranportal_id'] ?? '');
         $this->action = $action;
         $this->currencyCode = $currencyCode;
         $this->password = $password ?? ($config['password'] ?? '');

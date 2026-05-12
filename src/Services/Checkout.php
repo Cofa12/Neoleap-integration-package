@@ -22,11 +22,11 @@ class Checkout
         $encryptedData = $dataWrapper->returnEncryptedTrandata();
 
         $config     = $this->loadConfig();
-        $merchantId = !empty($config['merchant_id']) ? $config['merchant_id'] : $dataWrapper->id;
+        $tranportalId = $config['tranportal_id'] ?? '';
 
         return $this->postToNeoleap(
             $encryptedData,
-            $merchantId,
+            $tranportalId,
             $dataWrapper->responseURL,
             $dataWrapper->errorURL,
             $customerIp
@@ -103,9 +103,8 @@ class Checkout
         $password    = $config['password'] ?? '';
         $responseURL = $config['response_url'] ?? '';
         $errorURL    = $config['error_url'] ?? '';
-        $trackId     = (string) time();
 
-        $trandataArray               = $dto->toTrandataArray($id, $password, $trackId);
+        $trandataArray               = $dto->toTrandataArray($id, $password);
         $trandataArray['responseURL'] = $responseURL;
         $trandataArray['errorURL']    = $errorURL;
 
@@ -129,9 +128,8 @@ class Checkout
         $password    = $config['password'] ?? '';
         $responseURL = $config['response_url'] ?? '';
         $errorURL    = $config['error_url'] ?? '';
-        $trackId     = (string) time();
 
-        $plaintext = json_encode([$dto->toTrandataArray($id, $password, $trackId, $responseURL, $errorURL)]);
+        $plaintext = json_encode([$dto->toTrandataArray($id, $password, $responseURL, $errorURL)]);
         $trandata  = $this->encryptTrandata($plaintext, $config);
 
         return $this->postToNeoleap(
