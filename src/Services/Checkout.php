@@ -117,7 +117,7 @@ class Checkout
             $responseURL,
             $errorURL,
             $customerIp,
-            'https://securepayments.neoleap.com.sa/pg/payment/tranportal.htm'
+            $config['neoleap_merchant_url'] ?? ''
         );
     }
 
@@ -157,7 +157,7 @@ class Checkout
             null,
             null,
             $customerIp,
-            'https://securepayments.neoleap.com.sa/pg/payment/tranportal.htm'
+            $config['neoleap_merchant_url'] ?? ''
         );
     }
 
