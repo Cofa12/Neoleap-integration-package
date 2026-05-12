@@ -62,48 +62,66 @@ class TranDataWrapper
 
     public function returnTransactionString(): string
     {
-        return json_encode([
-            'amt' => number_format($this->amt, 2, '.', ''),
-            'action' => (string) $this->action,
-            'password' => $this->password,
-            'id' => $this->id,
+        return json_encode([[
+            'amt'          => number_format($this->amt, 2, '.', ''),
+            'action'       => (string) $this->action,
+            'password'     => $this->password,
+            'id'           => $this->id,
             'currencyCode' => (string) $this->currencyCode,
-            'trackId' => $this->trackId,
-            'responseURL' => $this->responseURL,
-            'errorURL' => $this->errorURL,
-            'udf1' => $this->udf1,
-            'udf2' => $this->udf2,
-            'udf3' => $this->udf3,
-            'udf4' => $this->udf4,
-            'udf5' => $this->udf5,
-            'langid' => $this->langid
-        ]);
+            'trackId'      => $this->trackId,
+            'responseURL'  => $this->responseURL,
+            'errorURL'     => $this->errorURL,
+            'udf1'         => $this->udf1,
+            'udf2'         => $this->udf2,
+            'udf3'         => $this->udf3,
+            'udf4'         => $this->udf4,
+            'udf5'         => $this->udf5,
+            'langid'       => $this->langid,
+        ]]);
     }
 
     public function returnEncryptedTrandata(): string
     {
+        $plaintext = $this->returnTransactionString();
+        $padded    = $this->pkcs5Pad($plaintext);
+
         $encrypted = openssl_encrypt(
-            $this->returnTransactionString(),
-            'AES-128-CBC',
-            hex2bin($this->encryptionKey),
-            OPENSSL_RAW_DATA,
+            $padded,
+            'aes-256-cbc',
+            $this->encryptionKey,
+            OPENSSL_ZERO_PADDING,
             $this->encryptionIV
         );
 
-        return strtoupper(bin2hex($encrypted));
+        return strtoupper(bin2hex(base64_decode($encrypted)));
     }
-    
+
     public function decryptResponse(string $encryptedHexData): string
     {
-        $binaryData = hex2bin($encryptedHexData);
+        $binary    = hex2bin($encryptedHexData);
+        $b64       = base64_encode($binary);
+
         $decrypted = openssl_decrypt(
-            $binaryData,
-            'AES-128-CBC',
-            hex2bin($this->encryptionKey),
-            OPENSSL_RAW_DATA,
+            $b64,
+            'aes-256-cbc',
+            $this->encryptionKey,
+            OPENSSL_ZERO_PADDING,
             $this->encryptionIV
         );
 
-        return (string) $decrypted;
+        return urldecode($this->pkcs5Unpad((string) $decrypted));
+    }
+
+    private function pkcs5Pad(string $data): string
+    {
+        $blockSize = 16;
+        $pad       = $blockSize - (strlen($data) % $blockSize);
+        return $data . str_repeat(chr($pad), $pad);
+    }
+
+    private function pkcs5Unpad(string $data): string
+    {
+        $pad = ord($data[strlen($data) - 1]);
+        return substr($data, 0, strlen($data) - $pad);
     }
 }

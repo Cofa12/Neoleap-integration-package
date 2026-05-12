@@ -55,23 +55,63 @@ class CheckoutTest extends TestCase
         }
 
         $checkout = new Checkout();
-        $response = $checkout->checkout();
+        $response = $checkout->checkout(customerIp: '203.0.113.1');
 
         $this->assertIsArray($response);
-        $this->assertArrayHasKey('status', $response);
+        $this->assertArrayHasKey(0, $response);
+        $this->assertArrayHasKey('status', $response[0]);
     }
 
     public function test_it_can_decrypt_response()
     {
         $wrapper = new \Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper(amt: 1);
-        
-        // Simulate an encrypted response
+
         $encrypted = $wrapper->returnEncryptedTrandata();
-        
-        // Decrypt it
         $decrypted = $wrapper->decryptResponse($encrypted);
-        
-        // The result should match the internal transaction string
+
         $this->assertEquals($wrapper->returnTransactionString(), $decrypted);
+    }
+
+    // Bug 4+5: postToNeoleap must receive customerIp as 5th argument
+    // Doc page 13: X-FORWARDED-FOR is mandatory; doc page 20: body is [{...}]
+    public function test_post_body_is_json_array()
+    {
+        $captured = null;
+
+        $checkoutMock = $this->getMockBuilder(Checkout::class)
+            ->onlyMethods(['postToNeoleap'])
+            ->getMock();
+
+        $checkoutMock->expects($this->once())
+            ->method('postToNeoleap')
+            ->willReturnCallback(function (string $data, string $id, ?string $responseURL, ?string $errorURL, string $customerIp) use (&$captured) {
+                $captured = ['data' => $data, 'id' => $id, 'responseURL' => $responseURL, 'errorURL' => $errorURL, 'customerIp' => $customerIp];
+                return [['status' => '1', 'result' => 'token:https://example.com']];
+            });
+
+        $checkoutMock->checkout(customerIp: '1.2.3.4');
+
+        $this->assertNotNull($captured, 'postToNeoleap was not called');
+        $this->assertArrayHasKey('customerIp', $captured);
+        $this->assertEquals('1.2.3.4', $captured['customerIp']);
+    }
+
+    // Bug 5: X-FORWARDED-FOR header must be sent with customer IP
+    // Doc page 13: mandatory for all requests or gateway declines
+    public function test_post_to_neoleap_sends_x_forwarded_for_header()
+    {
+        $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
+
+        if (empty($config['tranportal_id'])) {
+            $this->markTestSkipped('Real credentials not provided in config.');
+        }
+
+        $checkout = new Checkout();
+        // Pass a known customer IP — real call should not get InvalidAccess
+        $response = $checkout->checkout(customerIp: '203.0.113.1');
+
+        $this->assertIsArray($response);
+        // A valid response has status '1' or '2', not our internal 'error' key from curl failure
+        $this->assertArrayNotHasKey('message', $response, 'Got internal error: ' . ($response['message'] ?? ''));
     }
 }
