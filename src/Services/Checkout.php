@@ -4,6 +4,7 @@ namespace Cofa\NeoleapIntegrationPackage\Services;
 use Cofa\NeoleapIntegrationPackage\DTOs\CardOnFilePaymentData;
 use Cofa\NeoleapIntegrationPackage\DTOs\CardOnFileRegistrationData;
 use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
+use Cofa\NeoleapIntegrationPackage\DTOs\WalletPaymentData;
 
 class Checkout
 {
@@ -117,6 +118,27 @@ class Checkout
             $errorURL,
             $customerIp,
             'https://securepayments.neoleap.com.sa/pg/payment/tranportal.htm'
+        );
+    }
+
+    public function payWithWallet(WalletPaymentData $dto, string $customerIp = ''): array
+    {
+        $config      = $this->loadConfig();
+        $id          = !empty($config['merchant_id']) ? $config['merchant_id'] : ($config['tranportal_id'] ?? '');
+        $password    = $config['password'] ?? '';
+        $responseURL = $config['response_url'] ?? '';
+        $errorURL    = $config['error_url'] ?? '';
+        $trackId     = (string) time();
+
+        $plaintext = json_encode([$dto->toTrandataArray($id, $password, $trackId, $responseURL, $errorURL)]);
+        $trandata  = $this->encryptTrandata($plaintext, $config);
+
+        return $this->postToNeoleap(
+            $trandata,
+            $id,
+            $responseURL,
+            $errorURL,
+            $customerIp
         );
     }
 
