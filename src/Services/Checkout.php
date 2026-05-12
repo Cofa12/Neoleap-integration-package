@@ -1,6 +1,7 @@
 <?php
 namespace Cofa\NeoleapIntegrationPackage\Services;
 
+use Cofa\NeoleapIntegrationPackage\DTOs\CardOnFileDeletionData;
 use Cofa\NeoleapIntegrationPackage\DTOs\CardOnFilePaymentData;
 use Cofa\NeoleapIntegrationPackage\DTOs\CardOnFileRegistrationData;
 use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
@@ -139,6 +140,25 @@ class Checkout
             $responseURL,
             $errorURL,
             $customerIp
+        );
+    }
+
+    public function deleteCard(CardOnFileDeletionData $dto, string $customerIp = ''): array
+    {
+        $config   = $this->loadConfig();
+        $id       = !empty($config['merchant_id']) ? $config['merchant_id'] : ($config['tranportal_id'] ?? '');
+        $password = $config['password'] ?? '';
+
+        $plaintext = json_encode([$dto->toTrandataArray($id, $password)]);
+        $trandata  = $this->encryptTrandata($plaintext, $config);
+
+        return $this->postToNeoleap(
+            $trandata,
+            $id,
+            null,
+            null,
+            $customerIp,
+            $config['neoleap_merchant_url'] ?? ''
         );
     }
 
