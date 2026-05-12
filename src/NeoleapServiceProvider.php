@@ -14,7 +14,7 @@ class NeoleapServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../config/neoleap.php' => config_path('neoleap.php'),
-            ], 'config');
+            ], 'neoleap-config');
         }
     }
 
