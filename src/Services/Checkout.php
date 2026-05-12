@@ -161,6 +161,43 @@ class Checkout
         );
     }
 
+    public function parseCallbackResponse(string $trandata): array
+    {
+        $config = $this->loadConfig();
+        $key    = $config['encryption_key'] ?? '';
+        $iv     = $config['encryption_iv']  ?? '';
+
+        $decrypted = openssl_decrypt(
+            base64_encode(hex2bin($trandata)),
+            'aes-256-cbc',
+            $key,
+            OPENSSL_ZERO_PADDING,
+            $iv
+        );
+
+        $pad      = ord($decrypted[strlen($decrypted) - 1]);
+        $json     = urldecode(substr($decrypted, 0, strlen($decrypted) - $pad));
+        $parsed   = json_decode($json, true);
+
+        if (!is_array($parsed)) {
+            return ['success' => false, 'raw' => $json];
+        }
+
+        $data    = $parsed[0] ?? $parsed;
+        $success = strtoupper($data['result'] ?? '') === 'CAPTURED';
+
+        return [
+            'success'   => $success,
+            'result'    => $data['result']    ?? null,
+            'auth'      => $data['auth']      ?? null,
+            'ref'       => $data['ref']       ?? null,
+            'trackId'   => $data['trackId']   ?? null,
+            'paymentId' => $data['paymentId'] ?? null,
+            'amt'       => $data['amt']       ?? null,
+            'raw'       => $data,
+        ];
+    }
+
     public function returnNeoleapURL(): string
     {
         $config = $this->loadConfig();
