@@ -7,30 +7,39 @@ use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
 
 class TranDataWrapperTest extends TestCase
 {
+    private static function config(): array
+    {
+        return file_exists(__DIR__ . '/../../config/neoleap.php')
+            ? include __DIR__ . '/../../config/neoleap.php'
+            : [];
+    }
+
     public function test_it_can_be_instantiated()
     {
+        $config = self::config();
+
         $wrapper = new TranDataWrapper(
             amt: 100,
             action: 1,
             currencyCode: 682,
-            id: "8jOr03F5vq4BVkY",
-            password: 'Ps@!0@0KEl57elY'
+            id: $config['tranportal_id'] ?? 'test_id',
+            password: $config['password'] ?? 'test_pw'
         );
 
         $this->assertInstanceOf(TranDataWrapper::class, $wrapper);
         $this->assertEquals(100, $wrapper->amt);
-        $this->assertEquals('Ps@!0@0KEl57elY', $wrapper->password);
+        $this->assertEquals($config['password'] ?? 'test_pw', $wrapper->password);
     }
 
     public function test_it_loads_config_defaults()
     {
+        $config = self::config();
+
         $wrapper = new TranDataWrapper(
             amt: 100,
-            id: "8jOr03F5vq4BVkY"
+            id: $config['tranportal_id'] ?? 'test_id'
         );
 
-        $config = file_exists(__DIR__ . '/../../config/neoleap.php') ? include(__DIR__ . '/../../config/neoleap.php') : [];
-        
         if (!empty($config['password'])) {
             $this->assertEquals($config['password'], $wrapper->password);
         } else {
@@ -40,12 +49,16 @@ class TranDataWrapperTest extends TestCase
 
     public function test_it_returns_transaction_string()
     {
+        $config = self::config();
+        $id     = $config['tranportal_id'] ?? 'test_id';
+        $pw     = $config['password'] ?? 'test_pw';
+
         $wrapper = new TranDataWrapper(
             amt: 100,
             action: 1,
             currencyCode: 682,
-            id: "8jOr03F5vq4BVkY",
-            password: 'Ps@!0@0KEl57elY'
+            id: $id,
+            password: $pw
         );
 
         $json = $wrapper->returnTransactionString();
@@ -55,17 +68,19 @@ class TranDataWrapperTest extends TestCase
         $this->assertIsArray($data);
         $this->assertArrayHasKey(0, $data);
         $this->assertEquals("100.00", $data[0]['amt']);
-        $this->assertEquals('Ps@!0@0KEl57elY', $data[0]['password']);
-        $this->assertEquals('8jOr03F5vq4BVkY', $data[0]['id']);
+        $this->assertEquals($pw, $data[0]['password']);
+        $this->assertEquals($id, $data[0]['id']);
     }
 
     public function test_it_returns_encrypted_data()
     {
+        $config = self::config();
+
         $wrapper = new TranDataWrapper(
             amt: 100,
             action: 1,
             currencyCode: 682,
-            id: "8jOr03F5vq4BVkY"
+            id: $config['tranportal_id'] ?? 'test_id'
         );
 
         $encrypted = $wrapper->returnEncryptedTrandata();
