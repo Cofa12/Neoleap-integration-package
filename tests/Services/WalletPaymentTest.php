@@ -28,9 +28,10 @@ class WalletPaymentTest extends TestCase
         $dto = new WalletPaymentData(
             amt: 100,
             mobileNumber: '512345678',
+            trackId: 'track123',
         );
 
-        $trandata = $dto->toTrandataArray('test_id', 'test_pw', 'track123', 'https://r.url', 'https://e.url');
+        $trandata = $dto->toTrandataArray('test_id', 'test_pw', 'https://r.url', 'https://e.url');
 
         $this->assertEquals('100.00', $trandata['amt']);
         $this->assertEquals('1', $trandata['action']);

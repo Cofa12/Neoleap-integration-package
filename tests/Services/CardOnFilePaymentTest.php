@@ -47,9 +47,10 @@ class CardOnFilePaymentTest extends TestCase
             cardType: 'C',
             expMonth: '12',
             expYear: '2027',
+            trackId: 'track123',
         );
 
-        $trandata = $dto->toTrandataArray('test_id', 'test_pw', 'track123');
+        $trandata = $dto->toTrandataArray('test_id', 'test_pw');
 
         $this->assertEquals('100.00', $trandata['amt']);
         $this->assertEquals('1', $trandata['action']);

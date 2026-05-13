@@ -22,10 +22,8 @@ class TranDataWrapper
 
     public function __construct(
         int $amt,
-        string $id = '',
         int $action = 1,
         int $currencyCode = 682,
-        ?string $password = null,
         string $udf1 = '',
         string $udf2 = '',
         string $udf3 = '',
@@ -43,10 +41,10 @@ class TranDataWrapper
         }
 
         $this->amt = $amt;
-        $this->id = $id ?: (!empty($config['merchant_id']) ? $config['merchant_id'] : ($config['tranportal_id'] ?? ''));
+        $this->id = $config['tranportal_id'] ?? '';
         $this->action = $action;
         $this->currencyCode = $currencyCode;
-        $this->password = $password ?? ($config['password'] ?? '');
+        $this->password = $config['password'] ?? '';
         $this->udf1 = $udf1;
         $this->udf2 = $udf2;
         $this->udf3 = $udf3;

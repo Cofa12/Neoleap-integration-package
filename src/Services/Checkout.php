@@ -21,12 +21,9 @@ class Checkout
 
         $encryptedData = $dataWrapper->returnEncryptedTrandata();
 
-        $config     = $this->loadConfig();
-        $merchantId = !empty($config['merchant_id']) ? $config['merchant_id'] : $dataWrapper->id;
-
         return $this->postToNeoleap(
             $encryptedData,
-            $merchantId,
+            $dataWrapper->id,
             $dataWrapper->responseURL,
             $dataWrapper->errorURL,
             $customerIp
@@ -99,13 +96,12 @@ class Checkout
     public function payWithSavedCard(CardOnFilePaymentData $dto, string $customerIp = ''): array
     {
         $config      = $this->loadConfig();
-        $id          = !empty($config['merchant_id']) ? $config['merchant_id'] : ($config['tranportal_id'] ?? '');
+        $id          = ($config['tranportal_id'] ?? '');
         $password    = $config['password'] ?? '';
         $responseURL = $config['response_url'] ?? '';
         $errorURL    = $config['error_url'] ?? '';
-        $trackId     = (string) time();
 
-        $trandataArray               = $dto->toTrandataArray($id, $password, $trackId);
+        $trandataArray               = $dto->toTrandataArray($id, $password);
         $trandataArray['responseURL'] = $responseURL;
         $trandataArray['errorURL']    = $errorURL;
 
@@ -125,13 +121,12 @@ class Checkout
     public function payWithWallet(WalletPaymentData $dto, string $customerIp = ''): array
     {
         $config      = $this->loadConfig();
-        $id          = !empty($config['merchant_id']) ? $config['merchant_id'] : ($config['tranportal_id'] ?? '');
+        $id          = ($config['tranportal_id'] ?? '');
         $password    = $config['password'] ?? '';
         $responseURL = $config['response_url'] ?? '';
         $errorURL    = $config['error_url'] ?? '';
-        $trackId     = (string) time();
 
-        $plaintext = json_encode([$dto->toTrandataArray($id, $password, $trackId, $responseURL, $errorURL)]);
+        $plaintext = json_encode([$dto->toTrandataArray($id, $password, $responseURL, $errorURL)]);
         $trandata  = $this->encryptTrandata($plaintext, $config);
 
         return $this->postToNeoleap(
@@ -146,7 +141,7 @@ class Checkout
     public function deleteCard(CardOnFileDeletionData $dto, string $customerIp = ''): array
     {
         $config   = $this->loadConfig();
-        $id       = !empty($config['merchant_id']) ? $config['merchant_id'] : ($config['tranportal_id'] ?? '');
+        $id       =  ($config['tranportal_id'] ?? '');
         $password = $config['password'] ?? '';
 
         $plaintext = json_encode([$dto->toTrandataArray($id, $password)]);
@@ -165,7 +160,7 @@ class Checkout
     public function registerCard(CardOnFileRegistrationData $dto, string $customerIp = ''): array
     {
         $config   = $this->loadConfig();
-        $id       = !empty($config['merchant_id']) ? $config['merchant_id'] : ($config['tranportal_id'] ?? '');
+        $id       =  ($config['tranportal_id'] ?? '');
         $password = $config['password'] ?? '';
 
         $plaintext = json_encode([$dto->toTrandataArray($id, $password)]);

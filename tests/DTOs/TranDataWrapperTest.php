@@ -18,27 +18,18 @@ class TranDataWrapperTest extends TestCase
     {
         $config = self::config();
 
-        $wrapper = new TranDataWrapper(
-            amt: 100,
-            action: 1,
-            currencyCode: 682,
-            id: $config['tranportal_id'] ?? 'test_id',
-            password: $config['password'] ?? 'test_pw'
-        );
+        $wrapper = new TranDataWrapper(amt: 100, action: 1, currencyCode: 682);
 
         $this->assertInstanceOf(TranDataWrapper::class, $wrapper);
         $this->assertEquals(100, $wrapper->amt);
-        $this->assertEquals($config['password'] ?? 'test_pw', $wrapper->password);
+        $this->assertEquals($config['password'] ?? '', $wrapper->password);
     }
 
     public function test_it_loads_config_defaults()
     {
         $config = self::config();
 
-        $wrapper = new TranDataWrapper(
-            amt: 100,
-            id: $config['tranportal_id'] ?? 'test_id'
-        );
+        $wrapper = new TranDataWrapper(amt: 100);
 
         if (!empty($config['password'])) {
             $this->assertEquals($config['password'], $wrapper->password);
@@ -50,16 +41,10 @@ class TranDataWrapperTest extends TestCase
     public function test_it_returns_transaction_string()
     {
         $config = self::config();
-        $id     = $config['tranportal_id'] ?? 'test_id';
-        $pw     = $config['password'] ?? 'test_pw';
+        $id     = $config['tranportal_id'] ?? '';
+        $pw     = $config['password'] ?? '';
 
-        $wrapper = new TranDataWrapper(
-            amt: 100,
-            action: 1,
-            currencyCode: 682,
-            id: $id,
-            password: $pw
-        );
+        $wrapper = new TranDataWrapper(amt: 100, action: 1, currencyCode: 682);
 
         $json = $wrapper->returnTransactionString();
         $data = json_decode($json, true);
@@ -74,14 +59,7 @@ class TranDataWrapperTest extends TestCase
 
     public function test_it_returns_encrypted_data()
     {
-        $config = self::config();
-
-        $wrapper = new TranDataWrapper(
-            amt: 100,
-            action: 1,
-            currencyCode: 682,
-            id: $config['tranportal_id'] ?? 'test_id'
-        );
+        $wrapper = new TranDataWrapper(amt: 100, action: 1, currencyCode: 682);
 
         $encrypted = $wrapper->returnEncryptedTrandata();
         $this->assertIsString($encrypted);
@@ -92,7 +70,7 @@ class TranDataWrapperTest extends TestCase
     // Doc page 282: openssl_encrypt with "aes-256-cbc", OPENSSL_ZERO_PADDING + manual pkcs5_pad, key raw
     public function test_encryption_uses_aes256_cbc_with_raw_key_and_pkcs5_padding()
     {
-        $wrapper = new TranDataWrapper(amt: 1, id: 'test', password: 'p', trackId: 'fixed');
+        $wrapper = new TranDataWrapper(amt: 1, trackId: 'fixed');
         // Force deterministic trandata so we can compare
         $actual = $wrapper->returnEncryptedTrandata();
 
@@ -106,7 +84,7 @@ class TranDataWrapperTest extends TestCase
     // Bug 2: key must NOT go through hex2bin — raw 32-byte string is the AES-256 key
     public function test_decrypt_round_trips_with_raw_key()
     {
-        $wrapper = new TranDataWrapper(amt: 1, id: 'test', password: 'p', trackId: 'fixed');
+        $wrapper = new TranDataWrapper(amt: 1, trackId: 'fixed');
 
         $encrypted = $wrapper->returnEncryptedTrandata();
         $decrypted = $wrapper->decryptResponse($encrypted);
