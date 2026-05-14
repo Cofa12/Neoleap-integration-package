@@ -18,8 +18,6 @@ class CardOnFilePaymentTest extends TestCase
             cvv2: '212',
             member: 'John Doe',
             cardType: 'C',
-            expMonth: '12',
-            expYear: '2027',
         );
 
         $this->assertEquals(100, $dto->amt);
@@ -28,8 +26,6 @@ class CardOnFilePaymentTest extends TestCase
         $this->assertEquals('212', $dto->cvv2);
         $this->assertEquals('John Doe', $dto->member);
         $this->assertEquals('C', $dto->cardType);
-        $this->assertEquals('12', $dto->expMonth);
-        $this->assertEquals('2027', $dto->expYear);
         $this->assertEquals('transaction', $dto->cardOnFileAction);
         $this->assertEquals(1, $dto->action);
         $this->assertEquals(682, $dto->currencyCode);
@@ -45,8 +41,6 @@ class CardOnFilePaymentTest extends TestCase
             cvv2: '212',
             member: 'John Doe',
             cardType: 'C',
-            expMonth: '12',
-            expYear: '2027',
             trackId: 'track123',
         );
 
@@ -61,11 +55,11 @@ class CardOnFilePaymentTest extends TestCase
         $this->assertEquals('212', $trandata['cvv2']);
         $this->assertEquals('John Doe', $trandata['member']);
         $this->assertEquals('C', $trandata['cardType']);
-        $this->assertEquals('12', $trandata['expMonth']);
-        $this->assertEquals('2027', $trandata['expYear']);
         $this->assertEquals('transaction', $trandata['cardOnFileAction']);
         $this->assertEquals('202613103841966', $trandata['cardOnFileToken']);
         $this->assertEquals('401200******1112', $trandata['maskedCardNo']);
+        $this->assertArrayNotHasKey('expMonth', $trandata);
+        $this->assertArrayNotHasKey('expYear', $trandata);
     }
 
     // Test 3: Checkout has a payWithSavedCard method
@@ -92,8 +86,6 @@ class CardOnFilePaymentTest extends TestCase
             cvv2: '212',
             member: 'John Doe',
             cardType: 'C',
-            expMonth: '12',
-            expYear: '2027',
         );
 
         $result = $checkoutMock->payWithSavedCard($dto, customerIp: '203.0.113.1');
@@ -120,8 +112,6 @@ class CardOnFilePaymentTest extends TestCase
             cvv2: '212',
             member: 'Test User',
             cardType: 'C',
-            expMonth: '12',
-            expYear: '2027',
         );
 
         $result = $checkout->payWithSavedCard($dto, customerIp: '203.0.113.1');
