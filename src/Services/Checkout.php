@@ -11,7 +11,7 @@ class Checkout
 {
     public function checkout(?TranDataWrapper $dataWrapper = null, string $customerIp = ''): array
     {
-        if (!$dataWrapper) {
+        if (! $dataWrapper) {
             $dataWrapper = new TranDataWrapper(
                 amt: 1,
                 action: 1,
@@ -41,12 +41,20 @@ class Checkout
         $url = $url ?? $this->returnNeoleapURL();
 
         // Doc requires array-wrapped body: [{...}]
-        $postBody = json_encode([[
-            'id'          => $id,
-            'trandata'    => $data,
-            'responseURL' => $responseURL ?? '',
-            'errorURL'    => $errorURL    ?? '',
-        ]]);
+
+        $body = [
+            'id'       => $id,
+            'trandata' => $data,
+        ];
+        if ($responseURL) {
+            $body['responseURL'] = $responseURL;
+        }
+
+        if ($errorURL) {
+            $body['errorURL'] = $errorURL;
+        }
+
+        $postBody = json_encode([$body]);
 
         $headers = [
             'Content-Type: application/json',
@@ -86,10 +94,10 @@ class Checkout
 
         // Non-JSON response — return raw for debugging
         return [
-            'status'   => 'error',
-            'message'  => 'Non-JSON response received',
+            'status'    => 'error',
+            'message'   => 'Non-JSON response received',
             'http_code' => $httpCode,
-            'raw'      => $response,
+            'raw'       => $response,
         ];
     }
 
@@ -98,23 +106,19 @@ class Checkout
         $config      = $this->loadConfig();
         $id          = ($config['tranportal_id'] ?? '');
         $password    = $config['password'] ?? '';
-        $responseURL = $config['response_url'] ?? '';
-        $errorURL    = $config['error_url'] ?? '';
 
-        $trandataArray               = $dto->toTrandataArray($id, $password);
-        $trandataArray['responseURL'] = $responseURL;
-        $trandataArray['errorURL']    = $errorURL;
+        $trandataArray = $dto->toTrandataArray($id, $password);
 
         $plaintext = json_encode([$trandataArray]);
         $trandata  = $this->encryptTrandata($plaintext, $config);
 
         return $this->postToNeoleap(
-            $trandata,
-            $id,
-            $responseURL,
-            $errorURL,
-            $customerIp,
-            $config['neoleap_merchant_url'] ?? ''
+            data: $trandata,
+            id: $id,
+            responseURL: null,
+            errorURL: null,
+            customerIp: $customerIp,
+            url: $config['neoleap_merchant_url'] ?? ''
         );
     }
 
@@ -141,7 +145,7 @@ class Checkout
     public function deleteCard(CardOnFileDeletionData $dto, string $customerIp = ''): array
     {
         $config   = $this->loadConfig();
-        $id       =  ($config['tranportal_id'] ?? '');
+        $id       = ($config['tranportal_id'] ?? '');
         $password = $config['password'] ?? '';
 
         $plaintext = json_encode([$dto->toTrandataArray($id, $password)]);
@@ -160,7 +164,7 @@ class Checkout
     public function registerCard(CardOnFileRegistrationData $dto, string $customerIp = ''): array
     {
         $config   = $this->loadConfig();
-        $id       =  ($config['tranportal_id'] ?? '');
+        $id       = ($config['tranportal_id'] ?? '');
         $password = $config['password'] ?? '';
 
         $plaintext = json_encode([$dto->toTrandataArray($id, $password)]);
@@ -180,7 +184,7 @@ class Checkout
     {
         $config = $this->loadConfig();
         $key    = $config['encryption_key'] ?? '';
-        $iv     = $config['encryption_iv']  ?? '';
+        $iv     = $config['encryption_iv'] ?? '';
 
         $decrypted = openssl_decrypt(
             base64_encode(hex2bin($trandata)),
@@ -194,7 +198,7 @@ class Checkout
         $json     = urldecode(substr($decrypted, 0, strlen($decrypted) - $pad));
         $parsed   = json_decode($json, true);
 
-        if (!is_array($parsed)) {
+        if (! is_array($parsed)) {
             return ['success' => false, 'raw' => $json];
         }
 
@@ -221,10 +225,10 @@ class Checkout
 
     private function encryptTrandata(string $plaintext, array $config): string
     {
-        $key = $config['encryption_key'] ?? '';
-        $iv  = $config['encryption_iv']  ?? '';
-        $pad = 16 - (strlen($plaintext) % 16);
-        $padded = $plaintext . str_repeat(chr($pad), $pad);
+        $key       = $config['encryption_key'] ?? '';
+        $iv        = $config['encryption_iv'] ?? '';
+        $pad       = 16 - (strlen($plaintext) % 16);
+        $padded    = $plaintext . str_repeat(chr($pad), $pad);
         $encrypted = openssl_encrypt($padded, 'aes-256-cbc', $key, OPENSSL_ZERO_PADDING, $iv);
         return strtoupper(bin2hex(base64_decode($encrypted)));
     }
@@ -232,9 +236,9 @@ class Checkout
     private function loadConfig(): array
     {
         if (function_exists('config')) {
-            return config('neoleap', []);
+            return config('neoleap') ?? [];
         }
         $path = __DIR__ . '/../../config/neoleap.php';
-        return file_exists($path) ? include($path) : [];
+        return file_exists($path) ? include $path : [];
     }
 }
