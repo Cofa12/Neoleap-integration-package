@@ -9,6 +9,8 @@ A PHP/Laravel package to seamlessly integrate the [Neoleap Payment Gateway](http
 ## Features
 
 - **Hosted Checkout** — redirect customers to the Neoleap-hosted payment page
+- **Faster Checkout** — one-click checkout for returning customers via `custid`
+- **Iframe Checkout** — embed the Neoleap payment form inside your own page
 - **Card on File** — register, charge, and delete saved cards
 - **Wallet Payment** — charge via mobile wallet (STC Pay etc.)
 - **Callback Parsing** — decrypt and parse Neoleap's encrypted callback response
@@ -165,8 +167,6 @@ $dto = new CardOnFilePaymentData(
     cvv2:            '123',
     member:          'John Doe',
     cardType:        'C',           // 'C' = credit, 'D' = debit
-    expMonth:        '05',
-    expYear:         '2027',
     trackId:         'order_' . time(),  // optional — defaults to time()
 );
 
@@ -179,14 +179,12 @@ $response = $checkout->payWithSavedCard($dto, customerIp: '203.0.113.1');
 
 | Parameter        | Type     | Default | Description                        |
 |------------------|----------|---------|------------------------------------|
-| `amt`            | `int`    | —       | Amount in SAR                      |
+| `amt`            | `float`  | —       | Amount in SAR                      |
 | `cardOnFileToken`| `string` | —       | Token from registration            |
 | `maskedCardNo`   | `string` | —       | Masked PAN returned at registration|
 | `cvv2`           | `string` | —       | Card CVV2                          |
 | `member`         | `string` | —       | Cardholder name                    |
 | `cardType`       | `string` | —       | `'C'` credit / `'D'` debit         |
-| `expMonth`       | `string` | —       | Expiry month (2 digits)            |
-| `expYear`        | `string` | —       | Expiry year (4 digits)             |
 | `action`         | `int`    | `1`     | 1=purchase, 2=auth                 |
 | `currencyCode`   | `int`    | `682`   | 682 = Saudi Riyal                  |
 | `trackId`        | `string` | `time()`| Unique order reference             |
@@ -256,7 +254,92 @@ $response = $checkout->payWithWallet($dto, customerIp: '203.0.113.1');
 
 ---
 
-### 6. Parsing the Callback Response
+### 6. Faster Checkout
+
+One-click checkout for returning customers identified by a `custid`. Neoleap uses the stored customer profile to pre-fill card details.
+
+```php
+use Cofa\NeoleapIntegrationPackage\Services\Checkout;
+use Cofa\NeoleapIntegrationPackage\DTOs\FasterCheckoutData;
+
+$checkout = new Checkout();
+
+$dto = new FasterCheckoutData(
+    amt:    150,
+    custid: 'customer_42',           // required — your unique customer identifier
+    langid: 'ar',
+    trackId: 'order_' . time(),      // optional — defaults to time()
+);
+
+$response = $checkout->checkoutFaster($dto, customerIp: '203.0.113.1');
+// $response[0]['status']      — '1' on success
+// $response[0]['result']      — 'paymentId:redirectUrl'
+```
+
+#### FasterCheckoutData parameters
+
+| Parameter            | Type      | Default     | Description                                  |
+|----------------------|-----------|-------------|----------------------------------------------|
+| `amt`                | `float`   | —           | Amount in SAR                                |
+| `custid`             | `string`  | —           | **Required.** Your unique customer ID        |
+| `action`             | `int`     | `1`         | 1=purchase, 2=auth                           |
+| `currencyCode`       | `int`     | `682`       | 682 = Saudi Riyal                            |
+| `trackId`            | `string`  | `time()`    | Unique order reference                       |
+| `responseURL`        | `string`  | from config | Override success callback URL                |
+| `errorURL`           | `string`  | from config | Override error callback URL                  |
+| `langid`             | `string`  | `'ar'`      | Payment page language (`ar` / `en`)          |
+| `custCardHolderName` | `string`  | `null`      | Optional cardholder name pre-fill            |
+| `custMobileNumber`   | `string`  | `null`      | Optional mobile number pre-fill              |
+| `custEmailId`        | `string`  | `null`      | Optional email pre-fill                      |
+| `udf1`–`udf5`        | `string`  | `''`        | User-defined fields                          |
+
+> **Validation:** `custid` must not be empty — an `InvalidArgumentException` is thrown otherwise.
+
+---
+
+### 7. Iframe Checkout
+
+Embed the Neoleap payment form inside your own page using an iframe. The gateway forces `udf3` to `'iframe'` internally — do not pass it yourself.
+
+```php
+use Cofa\NeoleapIntegrationPackage\Services\Checkout;
+use Cofa\NeoleapIntegrationPackage\DTOs\IframeCheckoutData;
+
+$checkout = new Checkout();
+
+$dto = new IframeCheckoutData(
+    amt:    150,
+    langid: 'ar',
+    trackId: 'order_' . time(),  // optional — defaults to time()
+);
+
+$response = $checkout->checkoutIframe($dto, customerIp: '203.0.113.1');
+// $response[0]['status']      — '1' on success
+// $response[0]['result']      — 'paymentId:redirectUrl'
+```
+
+#### IframeCheckoutData parameters
+
+| Parameter            | Type     | Default     | Description                                  |
+|----------------------|----------|-------------|----------------------------------------------|
+| `amt`                | `float`  | —           | Amount in SAR                                |
+| `action`             | `int`    | `1`         | 1=purchase, 2=auth                           |
+| `currencyCode`       | `int`    | `682`       | 682 = Saudi Riyal                            |
+| `trackId`            | `string` | `time()`    | Unique order reference                       |
+| `responseURL`        | `string` | from config | Override success callback URL                |
+| `errorURL`           | `string` | from config | Override error callback URL                  |
+| `langid`             | `string` | `'ar'`      | Payment page language (`ar` / `en`)          |
+| `custid`             | `string` | `null`      | Optional customer ID                         |
+| `custCardHolderName` | `string` | `null`      | Optional cardholder name pre-fill            |
+| `custMobileNumber`   | `string` | `null`      | Optional mobile number pre-fill              |
+| `custEmailId`        | `string` | `null`      | Optional email pre-fill                      |
+| `udf1`, `udf2`, `udf4`, `udf5` | `string` | `''` | User-defined fields (`udf3` is reserved) |
+
+> **Note:** `udf3` is always set to `'iframe'` by the gateway spec — any value you pass is ignored.
+
+---
+
+### 8. Parsing the Callback Response
 
 Neoleap posts an encrypted `trandata` field to your `responseURL`. Use `parseCallbackResponse` to decrypt and extract the result:
 
