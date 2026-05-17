@@ -3,7 +3,7 @@ namespace Cofa\NeoleapIntegrationPackage\DTOs;
 
 class TranDataWrapper
 {
-    public int $amt; // amount of payment
+    public float $amt; // amount of payment
     public int $action = 1; // 1 for purchase, 2 for authorization, 3 for refund, 4 for void
     public int $currencyCode = 682; // 682 for Saudi Riyal
     public string $password; // transaction password
@@ -21,7 +21,7 @@ class TranDataWrapper
     private $encryptionIV = "";
 
     public function __construct(
-        int $amt,
+        float $amt,
         int $action = 1,
         int $currencyCode = 682,
         string $udf1 = '',

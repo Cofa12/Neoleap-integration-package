@@ -7,7 +7,7 @@ class CardOnFilePaymentData
     public readonly string $trackId;
 
     public function __construct(
-        public readonly int $amt,
+        public readonly float $amt,
         public readonly string $cardOnFileToken,
         public readonly string $maskedCardNo,
         public readonly string $cvv2,
