@@ -4,6 +4,8 @@ namespace Cofa\NeoleapIntegrationPackage\Services;
 use Cofa\NeoleapIntegrationPackage\DTOs\CardOnFileDeletionData;
 use Cofa\NeoleapIntegrationPackage\DTOs\CardOnFilePaymentData;
 use Cofa\NeoleapIntegrationPackage\DTOs\CardOnFileRegistrationData;
+use Cofa\NeoleapIntegrationPackage\DTOs\FasterCheckoutData;
+use Cofa\NeoleapIntegrationPackage\DTOs\IframeCheckoutData;
 use Cofa\NeoleapIntegrationPackage\DTOs\TranDataWrapper;
 use Cofa\NeoleapIntegrationPackage\DTOs\WalletPaymentData;
 
@@ -138,6 +140,46 @@ class Checkout
             $id,
             $responseURL,
             $errorURL,
+            $customerIp
+        );
+    }
+
+    public function checkoutFaster(FasterCheckoutData $dto, string $customerIp = ''): array
+    {
+        $config      = $this->loadConfig();
+        $id          = $config['tranportal_id'] ?? '';
+        $password    = $config['password'] ?? '';
+        $responseURL = $config['response_url'] ?? '';
+        $errorURL    = $config['error_url'] ?? '';
+
+        $plaintext = json_encode([$dto->toTrandataArray($id, $password, $responseURL, $errorURL)]);
+        $trandata  = $this->encryptTrandata($plaintext, $config);
+
+        return $this->postToNeoleap(
+            $trandata,
+            $id,
+            $dto->responseURL ?? $responseURL,
+            $dto->errorURL ?? $errorURL,
+            $customerIp
+        );
+    }
+
+    public function checkoutIframe(IframeCheckoutData $dto, string $customerIp = ''): array
+    {
+        $config      = $this->loadConfig();
+        $id          = $config['tranportal_id'] ?? '';
+        $password    = $config['password'] ?? '';
+        $responseURL = $config['response_url'] ?? '';
+        $errorURL    = $config['error_url'] ?? '';
+
+        $plaintext = json_encode([$dto->toTrandataArray($id, $password, $responseURL, $errorURL)]);
+        $trandata  = $this->encryptTrandata($plaintext, $config);
+
+        return $this->postToNeoleap(
+            $trandata,
+            $id,
+            $dto->responseURL ?? $responseURL,
+            $dto->errorURL ?? $errorURL,
             $customerIp
         );
     }

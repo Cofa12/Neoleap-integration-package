@@ -6,7 +6,7 @@ class WalletPaymentData
     public readonly string $trackId;
 
     public function __construct(
-        public readonly int $amt,
+        public readonly float $amt,
         public readonly string $mobileNumber,
         public readonly int $action = 1,
         public readonly int $currencyCode = 682,
